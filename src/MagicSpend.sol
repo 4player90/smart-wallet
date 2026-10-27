@@ -25,6 +25,10 @@ contract MagicSpend is Ownable {
     error InvalidAddress();
 
     event MagicSpendWithdrawal(address indexed account, address indexed asset, uint256 amount, uint256 nonce);
+    event MagicSpendOwnerWithdrawal(address indexed to, address indexed asset, uint256 amount);
+
+    /// @notice Accept ETH so the contract can be funded to honor withdrawals.
+    receive() external payable {}
 
     mapping(uint256 => mapping(address => bool)) private _nonceUsed;
 
@@ -39,7 +43,7 @@ contract MagicSpend is Ownable {
     function ownerWithdraw(address asset, address to, uint256 amount) external onlyOwner {
         if (to == address(0)) revert InvalidAddress();
         _withdraw(asset, to, amount);
-        emit MagicSpendWithdrawal(to, asset, amount, 0);
+        emit MagicSpendOwnerWithdrawal(to, asset, amount);
     }
 
     function entryPointDeposit() external payable onlyOwner {
@@ -51,8 +55,8 @@ contract MagicSpend is Ownable {
         IEntryPoint(entryPoint()).withdrawTo(to, amount);
     }
 
-    function entryPointAddStake(uint256 amount, uint32 unstakeDelaySeconds) external payable onlyOwner {
-        IEntryPoint(entryPoint()).addStake{value: amount}(unstakeDelaySeconds);
+    function entryPointAddStake(uint32 unstakeDelaySeconds) external payable onlyOwner {
+        IEntryPoint(entryPoint()).addStake{value: msg.value}(unstakeDelaySeconds);
     }
 
     function entryPointUnlockStake() external onlyOwner {
